@@ -45,6 +45,14 @@ export class StudentResearchJournalStack extends cdk.Stack {
       retention: RetentionDays.ONE_MONTH,
     });
 
+    const jwtSecret = new secretsmanager.Secret(this, 'JwtSecret', {
+      secretName: `${APP_SHORT_NAME.toLowerCase()}-jwt-secret`,
+      generateSecretString: {
+        excludePunctuation: true,
+        passwordLength: 64,
+      },
+    });
+
     const dbSecret = new secretsmanager.Secret(this, 'DBSecret', {
       secretName: `${APP_SHORT_NAME.toLowerCase()}-db-credentials`,
       generateSecretString: {
@@ -163,6 +171,7 @@ export class StudentResearchJournalStack extends cdk.Stack {
         secrets: {
           DB_USERNAME: Secret.fromSecretsManager(dbSecret, 'username'),
           DB_PASSWORD: Secret.fromSecretsManager(dbSecret, 'password'),
+          SRJ_JWT_SECRET: Secret.fromSecretsManager(jwtSecret),
         },
         logDriver: LogDriver.awsLogs({
           streamPrefix: 'api',
@@ -186,6 +195,7 @@ export class StudentResearchJournalStack extends cdk.Stack {
     );
 
     dbSecret.grantRead(fargateApiService.taskDefinition.taskRole);
+    jwtSecret.grantRead(fargateApiService.taskDefinition.taskRole);
     filesBucket.grantReadWrite(fargateApiService.taskDefinition.taskRole);
   }
 }
